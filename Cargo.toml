@@ -1,0 +1,16 @@
+[package]
+name = "u-graphics"
+version = "0.1.0"
+authors = ["jun"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+wgpu = "*"
+winit = "*"
+uuid = { version = "*", features = ["v4", "serde"] }
+gltf = "*"
+futures = "*"
+shaderc = "*"
+nalgebra-glm = "*"
