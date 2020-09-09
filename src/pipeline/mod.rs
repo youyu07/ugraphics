@@ -3,7 +3,9 @@ use crate::shader;
 type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 
 pub struct PipelineResource {
-    pipeline: wgpu::RenderPipeline,
+    pub bind_group_layout: wgpu::BindGroupLayout,
+    pub pipeline_layout: wgpu::PipelineLayout,
+    pub pipeline: wgpu::RenderPipeline,
 }
 
 pub fn create_select_pipeline(device: &wgpu::Device, color_format: wgpu::TextureFormat) -> Result<PipelineResource> {
@@ -18,12 +20,12 @@ pub fn create_select_pipeline(device: &wgpu::Device, color_format: wgpu::Texture
                 visibility: wgpu::ShaderStage::VERTEX,
                 ty: wgpu::BindingType::UniformBuffer {
                     dynamic: true,
-                    min_binding_size: wgpu::BufferSize::new(64),
+                    min_binding_size: wgpu::BufferSize::new(64 * 2),
                 },
                 count: None,
             },
             wgpu::BindGroupLayoutEntry {
-                binding: 0,
+                binding: 1,
                 visibility: wgpu::ShaderStage::FRAGMENT,
                 ty: wgpu::BindingType::UniformBuffer {
                     dynamic: true,
@@ -46,13 +48,18 @@ pub fn create_select_pipeline(device: &wgpu::Device, color_format: wgpu::Texture
         vertex_state: wgpu::VertexStateDescriptor {
             index_format: wgpu::IndexFormat::Uint32,
             vertex_buffers: &[wgpu::VertexBufferDescriptor {
-                stride: 12 as wgpu::BufferAddress,
+                stride: 24 as wgpu::BufferAddress,
                 step_mode: wgpu::InputStepMode::Vertex,
                 attributes: &[
                     wgpu::VertexAttributeDescriptor {
                         format: wgpu::VertexFormat::Float3,
                         offset: 0,
                         shader_location: 0,
+                    },
+                    wgpu::VertexAttributeDescriptor {
+                        format: wgpu::VertexFormat::Float3,
+                        offset: 12,
+                        shader_location: 1,
                     }
                 ],
             }],
@@ -84,6 +91,8 @@ pub fn create_select_pipeline(device: &wgpu::Device, color_format: wgpu::Texture
     });
 
     Ok(PipelineResource{
+        bind_group_layout,
+        pipeline_layout,
         pipeline,
     })
 }
