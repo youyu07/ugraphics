@@ -6,6 +6,7 @@ use bytemuck::{Pod, Zeroable};
 struct VertexData {
     position: glam::Vec3,
     normal: glam::Vec3,
+    texcoord: glam::Vec2,
 }
 
 impl Default for VertexData {
@@ -13,6 +14,7 @@ impl Default for VertexData {
         Self {
             position: glam::Vec3::zero(),
             normal: glam::Vec3::zero(),
+            texcoord: glam::Vec2::zero(),
         }
     }
 }
@@ -35,7 +37,7 @@ pub struct Scene {
     pub meshes: Vec<Mesh>,
 }
 
-pub async fn from_gltf(device: &wgpu::Device, path: &str) -> Scene {
+pub async fn from_gltf(device: &wgpu::Device, path: &std::path::Path) -> Scene {
     let (document, buffers, _images) = gltf::import(path).unwrap();
 
     let meshes: Vec<Mesh> = document.meshes().map(|gm| {
@@ -61,6 +63,11 @@ pub async fn from_gltf(device: &wgpu::Device, path: &str) -> Scene {
                 }
             }
 
+            if let Some(texcoord) = reader.read_tex_coords(0) {
+                for (i, texcoord) in texcoord.into_f32().enumerate() {
+                    vertices[i].texcoord = glam::Vec2::from(texcoord.clone());
+                }
+            }
 
             let vertex_buffer = device.create_buffer_init(
                 &wgpu::util::BufferInitDescriptor{

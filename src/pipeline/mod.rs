@@ -48,7 +48,7 @@ pub fn create_select_pipeline(device: &wgpu::Device, color_format: wgpu::Texture
         vertex_state: wgpu::VertexStateDescriptor {
             index_format: wgpu::IndexFormat::Uint32,
             vertex_buffers: &[wgpu::VertexBufferDescriptor {
-                stride: 24 as wgpu::BufferAddress,
+                stride: 32 as wgpu::BufferAddress,
                 step_mode: wgpu::InputStepMode::Vertex,
                 attributes: &[
                     wgpu::VertexAttributeDescriptor {
@@ -60,6 +60,11 @@ pub fn create_select_pipeline(device: &wgpu::Device, color_format: wgpu::Texture
                         format: wgpu::VertexFormat::Float3,
                         offset: 12,
                         shader_location: 1,
+                    },
+                    wgpu::VertexAttributeDescriptor {
+                        format: wgpu::VertexFormat::Float2,
+                        offset: 24,
+                        shader_location: 2,
                     }
                 ],
             }],

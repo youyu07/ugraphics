@@ -2,7 +2,6 @@ use winit::{
     event::WindowEvent,
 };
 
-use wgpu::util::DeviceExt;
 
 mod shader;
 mod pipeline;
@@ -11,7 +10,7 @@ mod assets;
 mod math;
 
 struct Example {
-    scene: assets::Scene,
+    scene: Option<assets::Scene>,
     camera: math::Camera,
     uniform_buffer: wgpu::Buffer,
     _color_buffer: wgpu::Buffer,
@@ -20,8 +19,15 @@ struct Example {
 }
 
 impl app::App for Example {
-    fn init(device: &wgpu::Device, _queue: &wgpu::Queue, sc_desc: &wgpu::SwapChainDescriptor) -> Self {
-        let scene = futures::executor::block_on(assets::from_gltf(device, "F:/Models/rick_and_morty_garage_fan_art/scene.gltf"));
+    fn init(device: &wgpu::Device, queue: &wgpu::Queue, sc_desc: &wgpu::SwapChainDescriptor) -> Self {
+        let scene = {
+            if let Some(path) = std::env::args().nth(1) {
+                let path = std::path::Path::new(&path);
+                if path.is_file() {
+                    Some(futures::executor::block_on(assets::from_gltf(device, &path)))
+                } else {None}
+            } else {None}
+        };
 
         let pipeline = pipeline::create_select_pipeline(device, sc_desc.format).unwrap();
 
@@ -41,13 +47,17 @@ impl app::App for Example {
         };
 
         let color_buffer = {
-            let color:[f32; 4] = [0.5,0.5,0.0,1.0];
-            device.create_buffer_init(&wgpu::util::BufferInitDescriptor{
-                label: None,
-                contents: bytemuck::cast_slice(&color),
-                usage: wgpu::BufferUsage::UNIFORM
+            device.create_buffer(&wgpu::BufferDescriptor{
+                label: Some("object color"),
+                size: 4 * 4,
+                usage: wgpu::BufferUsage::UNIFORM | wgpu::BufferUsage::COPY_DST,
+                mapped_at_creation: false,
             })
         };
+        {
+            let color:[f32; 4] = [0.5,0.5,0.0,1.0];
+            queue.write_buffer(&color_buffer, 0, bytemuck::cast_slice(&[color]));
+        }
 
         let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout: &pipeline.bind_group_layout,
@@ -95,17 +105,18 @@ impl app::App for Example {
                 depth_stencil_attachment: None,
             });
 
-            rpass.set_pipeline(&self.pipeline.pipeline);
-            rpass.set_bind_group(0, &self.bind_group, &[0,0]);
-
-            for mesh in &self.scene.meshes {
-                for sub in &mesh.subs {
-
-                    rpass.set_index_buffer(sub.index_buffer.slice(..));
-                    rpass.set_vertex_buffer(0,sub.vertex_buffer.slice(..));
-                    
-                    let range = 0..(sub.count as u32);
-                    rpass.draw_indexed(range, 0, 0..1);
+            if let Some(s) = &self.scene {
+                rpass.set_pipeline(&self.pipeline.pipeline);
+                rpass.set_bind_group(0, &self.bind_group, &[0,0]);
+    
+                for mesh in &s.meshes {
+                    for sub in &mesh.subs {
+                        rpass.set_index_buffer(sub.index_buffer.slice(..));
+                        rpass.set_vertex_buffer(0,sub.vertex_buffer.slice(..));
+                        
+                        let range = 0..(sub.count as u32);
+                        rpass.draw_indexed(range, 0, 0..1);
+                    }
                 }
             }
         }

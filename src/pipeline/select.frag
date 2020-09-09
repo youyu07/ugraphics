@@ -1,6 +1,7 @@
 #version 450
 
 layout(location = 0) in vec3 v_Norm;
+layout(location = 0) in vec2 v_Texcoord;
 
 layout(set = 0, binding = 1) uniform Locals {
     vec4 u_color;
